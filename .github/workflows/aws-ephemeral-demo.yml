@@ -1,0 +1,136 @@
+name: AWS Ephemeral Lightsail Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_base:
+        description: "Base name for the Lightsail container service"
+        required: false
+        default: "reddit-topics-demo"
+      app_port:
+        description: "Public app port"
+        required: false
+        default: "8501"
+      plan:
+        description: "Lightsail service plan (nano, micro, small, medium, large)"
+        required: false
+        default: "nano"
+
+jobs:
+  deploy-and-teardown:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      IMAGE_NAME: reddit-topics
+      SERVICE_NAME: ${{ github.event.inputs.service_base }}-${{ github.run_id }}
+      APP_PORT: ${{ github.event.inputs.app_port }}
+      PLAN: ${{ github.event.inputs.plan }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Show caller identity (proof credentials work)
+        run: aws sts get-caller-identity
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build local Docker image
+        run: |
+          docker build -t ${IMAGE_NAME}:latest -f dockerfile .
+
+      - name: Push image to Lightsail registry
+        id: pushimg
+        run: |
+          aws lightsail push-container-image \
+            --service-name ${SERVICE_NAME} \
+            --label app \
+            --image ${IMAGE_NAME}:latest
+
+      - name: Extract Lightsail image digest
+        id: digest
+        run: |
+          DIGEST=$(aws lightsail get-container-images --service-name ${SERVICE_NAME} \
+            --query "containerImages[?image==\`app\`].digest" --output text || true)
+          echo "DIGEST=$DIGEST" >> $GITHUB_ENV
+
+      - name: Create or update Lightsail container service
+        run: |
+          # Create the service (idempotent: if exists, command will fail, so we ignore and continue)
+          set -e
+          aws lightsail create-container-service \
+            --service-name ${SERVICE_NAME} \
+            --power ${PLAN} \
+            --scale 1 || true
+
+      - name: Deploy container to Lightsail
+        run: |
+          cat > ls-deploy.json <<EOF
+          {
+            "containers": {
+              "app": {
+                "image": "${{ env.SERVICE_NAME }}.app",
+                "ports": { "${APP_PORT}": "HTTP" },
+                "environment": {
+                  "STREAMLIT_SERVER_PORT": "${APP_PORT}"
+                }
+              }
+            },
+            "publicEndpoint": {
+              "containerName": "app",
+              "containerPort": ${APP_PORT},
+              "healthCheck": {
+                "healthyThreshold": 2,
+                "unhealthyThreshold": 3,
+                "timeoutSeconds": 5,
+                "intervalSeconds": 10,
+                "path": "/"
+              }
+            }
+          }
+          EOF
+
+          aws lightsail create-container-service-deployment \
+            --service-name ${SERVICE_NAME} \
+            --containers file://ls-deploy.json \
+            --public-endpoint file://ls-deploy.json
+
+      - name: Wait for service to become active
+        run: |
+          echo "Waiting for service public URL..."
+          for i in {1..30}; do
+            URL=$(aws lightsail get-container-services \
+              --service-name ${SERVICE_NAME} \
+              --query "containerServices[0].url" \
+              --output text 2>/dev/null || true)
+            if [ "$URL" != "None" ] && [ -n "$URL" ]; then
+              echo "SERVICE_URL=$URL" >> $GITHUB_ENV
+              echo "Service URL: $URL"
+              break
+            fi
+            echo "Still provisioning... ($i/30)"
+            sleep 10
+          done
+
+      - name: Probe health endpoint
+        if: env.SERVICE_URL != ''
+        run: |
+          echo "Probing $SERVICE_URL ..."
+          curl -I --max-time 10 "$SERVICE_URL" || true
+
+      - name: Teardown (delete service to avoid charges)
+        if: always()
+        run: |
+          echo "Deleting service ${SERVICE_NAME} ..."
+          aws lightsail delete-container-service --service-name ${SERVICE_NAME} || true
