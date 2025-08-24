@@ -1,0 +1,20 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data and artifacts
+data/raw/
+data/processed/
+artifacts/
+
+# Env files
+.env
+.env.*
+!*.example
+
+# Jupyter/VSCode
+.ipynb_checkpoints/
+.vscode/
