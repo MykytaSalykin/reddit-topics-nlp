@@ -1,0 +1,11 @@
+services:
+  reddit-topics:
+    build: .
+    container_name: reddit-topics-app
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./artifacts:/app/artifacts:ro
+      - ./app:/app/app:ro
