@@ -48,6 +48,11 @@ jobs:
 
       - name: Build local Docker image
         run: docker build -t ${IMAGE_NAME}:latest -f Dockerfile .
+    
+      - name: Install lightsailctl
+        run: |
+          curl "https://lightsailctl-download.s3.amazonaws.com/$(uname -s)_$(uname -m)/latest/lightsailctl" -o /usr/local/bin/lightsailctl
+          chmod +x /usr/local/bin/lightsailctl
 
       - name: Push image to Lightsail registry
         id: pushimg
