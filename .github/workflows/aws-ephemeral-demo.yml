@@ -80,35 +80,37 @@ jobs:
 
       - name: Deploy container to Lightsail
         run: |
-          cat > ls-deploy.json <<EOF
+          cat > containers.json <<EOF
           {
-            "containers": {
-              "app": {
-                "image": "${{ env.SERVICE_NAME }}.app",
-                "ports": { "${APP_PORT}": "HTTP" },
-                "environment": {
-                  "STREAMLIT_SERVER_PORT": "${APP_PORT}"
-                }
+            "app": {
+              "image": "${{ env.SERVICE_NAME }}.app",
+              "ports": { "${APP_PORT}": "HTTP" },
+              "environment": {
+                "STREAMLIT_SERVER_PORT": "${APP_PORT}"
               }
-            },
-            "publicEndpoint": {
-              "containerName": "app",
-              "containerPort": ${APP_PORT},
-              "healthCheck": {
-                "healthyThreshold": 2,
-                "unhealthyThreshold": 3,
-                "timeoutSeconds": 5,
-                "intervalSeconds": 10,
-                "path": "/"
-              }
+            }
+          }
+          EOF
+
+          cat > endpoint.json <<EOF
+          {
+            "containerName": "app",
+            "containerPort": ${APP_PORT},
+            "healthCheck": {
+              "healthyThreshold": 2,
+              "unhealthyThreshold": 3,
+              "timeoutSeconds": 5,
+              "intervalSeconds": 10,
+              "path": "/"
             }
           }
           EOF
 
           aws lightsail create-container-service-deployment \
             --service-name ${SERVICE_NAME} \
-            --containers file://ls-deploy.json \
-            --public-endpoint file://ls-deploy.json
+            --containers file://containers.json \
+            --public-endpoint file://endpoint.json
+
 
       - name: Wait for service to become active
         run: |
