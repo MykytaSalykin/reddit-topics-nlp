@@ -3,14 +3,13 @@
 
 
 <p align="center">
-  <img src="./docs/screenshots/overview.png" width="32%"/>
-  <img src="./docs/screenshots/explorer1.png" width="32%"/>
-  <img src="./docs/screenshots/explorer2.png" width="32%"/>
+  <img src="docs/screenshots/overview.jpg" width="400"/>
+  <img src="docs/screenshots/explorer1.jpg" width="400"/>
+  <img src="docs/screenshots/explorer2.jpg" width="400"/>
+  <img src="docs/screenshots/toxicity1.jpg" width="400"/>
+  <img src="docs/screenshots/toxicity2.jpg" width="400"/>
 </p>
-<p align="center">
-  <img src="./docs/screenshots/toxicity1.png" width="48%"/>
-  <img src="./docs/screenshots/toxicity2.png" width="48%"/>
-</p>
+
 
 ---
 
