@@ -11,3 +11,4 @@ pyarrow
 python-dotenv
 streamlit>=1.30,<2.0
 detoxify
+wordcloud
