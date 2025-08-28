@@ -91,12 +91,14 @@ The pipeline consists of several modular stages:
 ```bash
 git clone https://github.com/<your-username>/reddit-topics-nlp.git
 cd reddit-topics-nlp
+```
 
 2. Install dependencies
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
+```
 
 3. Configure Reddit API
 Create a .env file in the project root:
@@ -109,6 +111,7 @@ MAX_COMMENTS_PER_POST=50
 TIME_FILTER=year
 
 4. Run pipeline
+```bash
 python -m src.ingest.reddit_dump
 python -m src.pipeline.clean_text
 python -m src.pipeline.features
@@ -117,9 +120,12 @@ python -m src.pipeline.report
 python -m src.pipeline.labeling
 python -m src.pipeline.toxicity
 python -m src.pipeline.plots
+```
 
 5. Launch the app
+```bash
 streamlit run app/streamlit_app.py
+```
 Then open http://localhost:8501
 
 
