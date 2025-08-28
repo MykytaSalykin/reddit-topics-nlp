@@ -101,13 +101,21 @@ pip install -r requirements.txt
 ```
 
 3. Configure Reddit API
+
 Create a .env file in the project root:
+
 REDDIT_CLIENT_ID=your_id
+
 REDDIT_CLIENT_SECRET=your_secret
+
 REDDIT_USER_AGENT=reddit-nlp-demo
+
 SUBREDDITS=fitness,chess,technology,movies,politics
+
 POSTS_PER_SUB=200
+
 MAX_COMMENTS_PER_POST=50
+
 TIME_FILTER=year
 
 4. Run pipeline
